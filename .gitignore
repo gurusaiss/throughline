@@ -1,0 +1,31 @@
+# Secrets — never commit real environment files. Only .env.example files are tracked.
+.env
+.env.*
+!.env.example
+!*/.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+frontend/dist/
+
+# OS / editor
+.DS_Store
+*.swp
+
+# Local dev artifacts
+*.log
+/backend/*.db
+/backend/*.sqlite3

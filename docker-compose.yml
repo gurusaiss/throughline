@@ -1,0 +1,62 @@
+# Local development / self-hosted stack. `docker compose up` is the whole product — no managed service
+# dependency, which RESEARCH 8.1 identifies as a real acquisition lever for the developer segment.
+#
+# Migrations are NOT run automatically on container start (an auto-migrating web process is how you
+# corrupt a schema under concurrent rollout) — run `docker compose run --rm backend alembic upgrade head`
+# once after `up`, or before every deploy.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: throughline
+      POSTGRES_PASSWORD: throughline
+      POSTGRES_DB: throughline
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U throughline"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://throughline:throughline@postgres:5432/throughline
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

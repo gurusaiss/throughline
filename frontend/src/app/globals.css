@@ -1,0 +1,170 @@
+@import "tailwindcss";
+
+/*
+  Design identity: "instrument panel", not "AI SaaS gradient card."
+  A calm, high-contrast, information-dense surface — the product's job is to show its own reasoning
+  (why this prompt, what it cost, what was checked), so typography and data density matter more than
+  decoration. Monospace is used deliberately for anything measured: costs, token counts, model ids,
+  confidence bands — it signals "this is a fact", distinct from prose.
+*/
+
+:root {
+  --bg: #fbfaf8;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --border: #e4e0d8;
+  --border-strong: #cec7b8;
+  --text: #1c1a16;
+  --text-muted: #6b6558;
+  --text-faint: #9a927f;
+
+  --accent: #a4531a;
+  --accent-strong: #7d3f13;
+  --accent-tint: #f5e6d8;
+
+  --ok: #2f6b3a;
+  --ok-tint: #e5f0e3;
+  --warn: #96650b;
+  --warn-tint: #faf0dc;
+  --danger: #a3311f;
+  --danger-tint: #fbe8e4;
+
+  --focus-ring: #a4531a;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(28, 26, 22, 0.06);
+  --shadow-md: 0 4px 16px rgba(28, 26, 22, 0.08);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14120f;
+    --surface: #1c1a16;
+    --surface-raised: #221f1a;
+    --border: #322e26;
+    --border-strong: #453f34;
+    --text: #f2ede2;
+    --text-muted: #b3ab97;
+    --text-faint: #8a8272;
+
+    --accent: #e08a45;
+    --accent-strong: #f0a868;
+    --accent-tint: #2e2115;
+
+    --ok: #6ebd7c;
+    --ok-tint: #1a2a1c;
+    --warn: #dcab4e;
+    --warn-tint: #2c2515;
+    --danger: #e2685a;
+    --danger-tint: #301e1b;
+
+    --focus-ring: #e08a45;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #14120f;
+  --surface: #1c1a16;
+  --surface-raised: #221f1a;
+  --border: #322e26;
+  --border-strong: #453f34;
+  --text: #f2ede2;
+  --text-muted: #b3ab97;
+  --text-faint: #8a8272;
+  --accent: #e08a45;
+  --accent-strong: #f0a868;
+  --accent-tint: #2e2115;
+  --ok: #6ebd7c;
+  --ok-tint: #1a2a1c;
+  --warn: #dcab4e;
+  --warn-tint: #2c2515;
+  --danger: #e2685a;
+  --danger-tint: #301e1b;
+  --focus-ring: #e08a45;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Scrollbar: quiet, not the browser default block */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 2px solid var(--bg);
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse-soft {
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out;
+}

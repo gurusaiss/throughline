@@ -1,0 +1,292 @@
+# Model catalogue (ADR-004).
+#
+# This file is DATA, not configuration of behaviour. It seeds the `models` table and can be edited and
+# re-seeded without a code change or deploy.
+#
+# THE RULE THAT MATTERS: every pricing block carries `verified` + `verified_at` + `source`.
+# RESEARCH 3.2 documents a pricing aggregator that was wrong by 50% on a flagship model two weeks after a
+# change. Entries marked `verified: false` are best-effort and are surfaced as such in the admin UI and in
+# every cost estimate derived from them. Do not flip `verified` to true without reading the vendor's own
+# pricing page.
+#
+# Prices are USD per 1,000,000 tokens.
+
+catalog_version: 1
+updated_at: "2026-09-17"
+
+providers:
+  - name: anthropic
+    display_name: Anthropic
+    docs: https://platform.claude.com/docs/en/about-claude/pricing
+  - name: openai
+    display_name: OpenAI
+    docs: https://platform.openai.com/docs/pricing
+  - name: google
+    display_name: Google
+    docs: https://ai.google.dev/gemini-api/docs/pricing
+  - name: openrouter
+    display_name: OpenRouter
+    docs: https://openrouter.ai/models
+  - name: scripted
+    display_name: Offline (development/test only)
+    docs: ""
+
+models:
+  # ----------------------------------------------------------------------------------
+  # Anthropic — VERIFIED against primary documentation on 2026-09-17 (RESEARCH 3.1)
+  # ----------------------------------------------------------------------------------
+  - id: claude-opus-5
+    provider: anthropic
+    display_name: Claude Opus 5
+    family: claude
+    tier: frontier
+    context_window: 1000000
+    max_output_tokens: 64000
+    modalities: [text, image]
+    capabilities: [text, vision, structured_output, tool_use, streaming, reasoning, prompt_caching, long_context]
+    quality_index: 95
+    speed_index: 55
+    pricing:
+      input_per_mtok: 5.00
+      output_per_mtok: 25.00
+      cache_read_per_mtok: 0.50
+      cache_write_per_mtok: 6.25
+      verified: true
+      verified_at: "2026-09-17"
+      source: https://platform.claude.com/docs/en/about-claude/pricing
+    available: true
+
+  - id: claude-sonnet-5
+    provider: anthropic
+    display_name: Claude Sonnet 5
+    family: claude
+    tier: balanced
+    context_window: 1000000
+    max_output_tokens: 64000
+    modalities: [text, image]
+    capabilities: [text, vision, structured_output, tool_use, streaming, reasoning, prompt_caching, long_context]
+    quality_index: 88
+    speed_index: 75
+    pricing:
+      # NOTE: a secondary source claimed $3/$15 here. The vendor's own page explicitly states the
+      # scheduled increase "will not occur" and $2/$10 is now standard. This is the concrete case that
+      # justifies ADR-004.
+      input_per_mtok: 2.00
+      output_per_mtok: 10.00
+      cache_read_per_mtok: 0.20
+      cache_write_per_mtok: 2.50
+      verified: true
+      verified_at: "2026-09-17"
+      source: https://platform.claude.com/docs/en/about-claude/pricing
+    available: true
+
+  - id: claude-haiku-4-5-20251001
+    provider: anthropic
+    display_name: Claude Haiku 4.5
+    family: claude
+    tier: fast
+    context_window: 200000
+    max_output_tokens: 32000
+    modalities: [text, image]
+    capabilities: [text, vision, structured_output, tool_use, streaming, prompt_caching]
+    quality_index: 74
+    speed_index: 92
+    pricing:
+      input_per_mtok: 1.00
+      output_per_mtok: 5.00
+      cache_read_per_mtok: 0.10
+      cache_write_per_mtok: 1.25
+      verified: true
+      verified_at: "2026-09-17"
+      source: https://platform.claude.com/docs/en/about-claude/pricing
+    available: true
+
+  - id: claude-fable-5-1
+    provider: anthropic
+    display_name: Claude Fable 5.1
+    family: claude
+    tier: frontier
+    context_window: 1000000
+    max_output_tokens: 64000
+    modalities: [text, image]
+    capabilities: [text, vision, structured_output, tool_use, streaming, reasoning, prompt_caching, long_context]
+    quality_index: 96
+    speed_index: 45
+    pricing:
+      input_per_mtok: 10.00
+      output_per_mtok: 50.00
+      cache_read_per_mtok: 0.25   # 0.025x multiplier, not the usual 0.1x
+      cache_write_per_mtok: 12.50
+      verified: true
+      verified_at: "2026-09-17"
+      source: https://platform.claude.com/docs/en/about-claude/pricing
+    available: true
+
+  # ----------------------------------------------------------------------------------
+  # OpenAI — UNVERIFIED. platform.openai.com was egress-blocked during research.
+  # Figures from secondary sources (RESEARCH 3.3). Operator must verify.
+  # ----------------------------------------------------------------------------------
+  - id: gpt-5.6-terra
+    provider: openai
+    display_name: GPT-5.6 Terra
+    family: gpt
+    tier: balanced
+    context_window: 400000
+    max_output_tokens: 32000
+    modalities: [text, image]
+    capabilities: [text, vision, structured_output, tool_use, streaming, reasoning, long_context]
+    quality_index: 88
+    speed_index: 74
+    pricing:
+      input_per_mtok: 2.00
+      output_per_mtok: 12.00
+      cache_read_per_mtok: 0.20
+      verified: false
+      verified_at: "2026-09-17"
+      source: https://benchlm.ai/openai/api-pricing
+    available: true
+
+  - id: gpt-5.6-luna
+    provider: openai
+    display_name: GPT-5.6 Luna
+    family: gpt
+    tier: fast
+    context_window: 400000
+    max_output_tokens: 32000
+    modalities: [text]
+    capabilities: [text, structured_output, tool_use, streaming]
+    quality_index: 70
+    speed_index: 94
+    pricing:
+      input_per_mtok: 0.20
+      output_per_mtok: 1.20
+      cache_read_per_mtok: 0.02
+      verified: false
+      verified_at: "2026-09-17"
+      source: https://benchlm.ai/openai/api-pricing
+    available: true
+
+  - id: gpt-6-astra
+    provider: openai
+    display_name: GPT-6 Astra
+    family: gpt
+    tier: frontier
+    context_window: 400000
+    max_output_tokens: 64000
+    modalities: [text, image]
+    capabilities: [text, vision, structured_output, tool_use, streaming, reasoning, long_context]
+    quality_index: 96
+    speed_index: 50
+    pricing:
+      input_per_mtok: 10.00
+      output_per_mtok: 50.00
+      verified: false
+      verified_at: "2026-09-17"
+      source: https://www.cloudzero.com/blog/openai-pricing/
+    available: true
+
+  # ----------------------------------------------------------------------------------
+  # Google — UNVERIFIED. ai.google.dev was egress-blocked during research.
+  # Note the Flash entry has a SCHEDULED PRICE CHANGE on 2027-01-01 (RESEARCH 3.3) — exactly the class of
+  # fact that rots silently, which is why effective_until exists.
+  # ----------------------------------------------------------------------------------
+  - id: gemini-3.1-pro
+    provider: google
+    display_name: Gemini 3.1 Pro
+    family: gemini
+    tier: balanced
+    context_window: 1000000
+    max_output_tokens: 64000
+    modalities: [text, image, document]
+    capabilities: [text, vision, structured_output, tool_use, streaming, reasoning, long_context]
+    quality_index: 89
+    speed_index: 70
+    pricing:
+      input_per_mtok: 2.00
+      output_per_mtok: 12.00
+      verified: false
+      verified_at: "2026-09-17"
+      source: https://benchlm.ai/google/api-pricing
+      note: "Quoted for prompts up to 200K tokens; longer prompts may be tiered."
+    available: true
+
+  - id: gemini-3.8-flash
+    provider: google
+    display_name: Gemini 3.8 Flash
+    family: gemini
+    tier: fast
+    context_window: 1000000
+    max_output_tokens: 32000
+    modalities: [text, image]
+    capabilities: [text, vision, structured_output, tool_use, streaming, long_context]
+    quality_index: 76
+    speed_index: 93
+    pricing:
+      input_per_mtok: 0.75
+      output_per_mtok: 3.75
+      verified: false
+      verified_at: "2026-09-17"
+      effective_until: "2026-12-31"
+      source: https://kunavo.com/guides/gemini-api-pricing-2026
+      note: "Introductory pricing. Secondary sources report $1.50/$7.50 from 2027-01-01. VERIFY."
+    available: true
+
+  # ----------------------------------------------------------------------------------
+  # Offline test double — never routed to in production (see ProviderPool._scripted_allowed)
+  # ----------------------------------------------------------------------------------
+  - id: scripted-standard
+    provider: scripted
+    display_name: Offline Deterministic (test)
+    family: scripted
+    tier: balanced
+    context_window: 200000
+    max_output_tokens: 8192
+    modalities: [text]
+    capabilities: [text, structured_output, streaming, prompt_caching]
+    quality_index: 50
+    speed_index: 100
+    pricing:
+      input_per_mtok: 0.0
+      output_per_mtok: 0.0
+      verified: true
+      verified_at: "2026-09-17"
+      source: "local"
+    available: true
+
+  - id: scripted-fast
+    provider: scripted
+    display_name: Offline Deterministic Fast (test)
+    family: scripted
+    tier: fast
+    context_window: 100000
+    max_output_tokens: 4096
+    modalities: [text]
+    capabilities: [text, structured_output, streaming]
+    quality_index: 40
+    speed_index: 100
+    pricing:
+      input_per_mtok: 0.0
+      output_per_mtok: 0.0
+      verified: true
+      verified_at: "2026-09-17"
+      source: "local"
+    available: true
+
+  - id: scripted-frontier
+    provider: scripted
+    display_name: Offline Deterministic Frontier (test)
+    family: scripted-alt
+    tier: frontier
+    context_window: 200000
+    max_output_tokens: 8192
+    modalities: [text]
+    capabilities: [text, structured_output, streaming, reasoning, tool_use]
+    quality_index: 80
+    speed_index: 90
+    pricing:
+      input_per_mtok: 0.0
+      output_per_mtok: 0.0
+      verified: true
+      verified_at: "2026-09-17"
+      source: "local"
+    available: true
