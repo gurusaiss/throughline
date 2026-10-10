@@ -72,6 +72,9 @@ the very first Alembic revision from the ORM models, and the app does not call i
   is true — enforced in `app/services/persistence.py`, not just documented.
 - `executions.input_redacted` records which state applied, so a UI can say "content not retained" rather
   than showing an empty field ambiguously.
-- Retention deletion (a scheduled job, not yet implemented — see `ROADMAP.md`) will delete `executions`
-  and `model_calls` past `organizations.retention_days`, while `usage_records` and `audit_logs` are
-  designed to survive that deletion by construction (no user content in either table).
+- Retention deletion (`app/services/retention.py::purge_expired`, run via
+  `python -m app.services.retention` — wiring it to a scheduler is an operator task, see
+  `MANUAL_STEPS.md`) deletes `executions` past `organizations.retention_days`, relying on the database's
+  own `ON DELETE CASCADE` to remove dependent `model_calls` and `evaluations`, while `usage_records` and
+  `audit_logs` are never touched and survive by construction (no user content in either table, and the
+  purge job never queries them).

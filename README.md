@@ -18,9 +18,13 @@ judge pass, and a visible evaluation. See `docs/PRODUCT.md` for the full positio
 
 ## Status
 
-MVP, built and verified locally against real Postgres, Redis and a live browser session (not just unit
-tests) — see the "What was verified" section below. **Not yet deployed anywhere.** No API keys are
-configured in this build. See `MANUAL_STEPS.md` for exactly what a human needs to do next.
+MVP plus a production-hardening pass, built and verified locally against real Postgres, Redis and a live
+browser session (not just unit tests) — see `MANUAL_STEPS.md` §4 for exactly what was verified and how.
+Includes an admin
+console (members, organization settings, audit log, bring-your-own provider keys), account self-service
+(API keys, profile, password, data export, deletion), rate limiting, and security headers. **Not yet
+deployed anywhere.** No API keys are configured in this build. See `MANUAL_STEPS.md` for exactly what a
+human needs to do next.
 
 ## Architecture at a glance
 
@@ -30,7 +34,7 @@ User → Next.js frontend → FastAPI (/api/v1) → Orchestrator
                                                   ├── Intent analysis (cheap model, conditional)
                                                   ├── Prompt compiler / optimiser
                                                   ├── Router (rule-based, explainable)
-                                                  ├── Provider adapters (Anthropic / OpenAI / Google / OpenRouter / offline)
+                                                  ├── Provider adapters (Anthropic / Groq / OpenAI / Google / OpenRouter / offline)
                                                   ├── Evaluation (deterministic + LLM judge)
                                                   └── Trace + cost ledger
                                                 → PostgreSQL + Redis
@@ -62,7 +66,8 @@ uvicorn app.main:app --reload
 
 Runs fully with **zero provider API keys** — the offline deterministic provider handles every request, so
 the whole pipeline (routing, evaluation, tracing, cost accounting) is exercisable and testable without
-spending money. Add a real key to `.env` to get real model output.
+spending money. Add a real key to `.env` to get real model output; **Groq** has a genuine free tier (no
+credit card) and is the fastest path to a real key — see `MANUAL_STEPS.md` §1.2.
 
 ### Frontend
 
@@ -84,7 +89,7 @@ docker compose run --rm backend alembic upgrade head   # once, after the first `
 
 ```bash
 cd backend
-pytest tests/ -q              # 173 tests, no API keys or network required
+pytest tests/ -q              # 224 tests, no API keys or network required
 ruff check app/ tests/
 mypy app/
 python -m app.benchmark.runner   # policy conformance (free) + quality A/B (needs a real provider key)
@@ -102,11 +107,12 @@ All of the above pass clean in this build (see the QA summary in the session rec
 ## Providers
 
 Only **Anthropic's** pricing in `backend/app/registry/catalog.yaml` is verified against primary
-documentation as of this build. OpenAI, Google and OpenRouter entries are marked `verified: false` because
-their pricing pages were unreachable from the research environment's network policy — see
-`docs/RESEARCH.md` §3 for the full account, including a documented case where a third-party pricing source
-was wrong by 50% on a flagship model. **Verify before relying on non-Anthropic cost figures in
-production.**
+documentation as of this build. **Groq** has a confirmed-live free tier (wired as a fallback provider, not
+primary, given its rate limits) but its paid-tier pricing is unverified; OpenAI, Google and OpenRouter
+entries are also marked `verified: false` because their pricing pages were unreachable from the research
+environment's network policy — see `docs/RESEARCH.md` §3 for the full account, including a documented case
+where a third-party pricing source was wrong by 50% on a flagship model. **Verify before relying on
+non-Anthropic cost figures in production.**
 
 ## Security
 

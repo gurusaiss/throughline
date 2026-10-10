@@ -122,6 +122,10 @@ Whichever you pick, you will need to:
   `backend/.env.example`) is on by default and backed by Redis when reachable. Review the default numbers
   (10/min auth, 120/min general, 20/min expensive) against your expected traffic before launch — they're
   reasonable defaults, not numbers tuned to your actual usage.
+- Schedule the data-retention purge job (`python -m app.services.retention`) to run periodically (e.g. a
+  daily cron job, systemd timer, or your platform's scheduled-job feature) — it deletes execution content
+  past each organization's `retention_days`, but nothing runs it automatically. Run it once with
+  `--dry-run` first against production data to see what it would delete before trusting it unattended.
 
 ### 2.2 Domain name and DNS
 

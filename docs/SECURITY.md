@@ -7,7 +7,7 @@ as the input to a real security review before production launch — see "What th
 
 | Actor | Capability | Primary defence |
 |---|---|---|
-| Anonymous internet user | Hits public endpoints | Rate limiting (Phase 2), input validation, auth required for all engine/data routes |
+| Anonymous internet user | Hits public endpoints | Rate limiting (`RateLimitMiddleware`, §7), input validation, auth required for all engine/data routes |
 | Authenticated user, wrong org | Has a valid token for org A, tries org B's resources | Tenant scoping in every repository query; cross-org access returns 404 (ARCHITECTURE §7) |
 | Malicious request content | Text/documents that try to steer the model or the pipeline | Datamarking (ADR-008), heuristic risk detection running before any model, deterministic output validation |
 | Compromised database dump | Reads the Postgres data files directly | Passwords: Argon2id. API keys: SHA-256, plaintext shown once. Provider credentials: Fernet-encrypted (ADR credential handling) |
@@ -71,9 +71,21 @@ defence in depth, not a solved problem:
   what the provider's constrained decoding promises (ADR-010) — provider-reported 98–100% compliance still
   leaves a real failure rate at volume.
 
-## 7. Transport and dependencies
+## 7. Transport, rate limiting, and dependencies
 
 - CORS is an explicit allow-list (`CORS_ORIGINS_RAW`), never `*` in production (enforced, §4).
+- **Rate limiting** (`app/core/middleware.py::RateLimitMiddleware`): Redis-backed fixed-window counters,
+  keyed by client IP (or `X-Forwarded-For` only when `TRUST_PROXY_HEADERS=true`, so the identity can't be
+  forged by an untrusted caller) and by auth-user when authenticated. Falls back to an approximate
+  in-process counter if Redis is unreachable, and fails *open* rather than blocking all traffic on a Redis
+  outage. Separate thresholds for auth endpoints, general endpoints, and expensive (execute/compare)
+  endpoints — see `backend/.env.example`. `GET /health` and `/health/ready` are never rate limited.
+- **Security response headers** (`SecurityHeadersMiddleware`): `X-Content-Type-Options`, `X-Frame-Options`,
+  `Referrer-Policy`, `X-XSS-Protection`, `Permissions-Policy`, and HSTS in production. Content-Security-Policy
+  is looser on `/docs`/`/redoc` (which need inline scripts to render Swagger UI) than on the rest of the API.
+- Middleware registration order matters and is commented in `app/main.py`: rate limiting and security
+  headers are added *before* CORS so CORS stays outermost and even a 429 or an error response still carries
+  correct CORS headers.
 - Dependencies are pinned via `pyproject.toml` / `package-lock.json`; Dependabot or equivalent should be
   enabled by the operator (not configured in this repo — see `docs/ROADMAP.md`).
 - No secrets are ever included in client-side (frontend) code or bundles; the frontend only ever holds a
@@ -84,7 +96,6 @@ defence in depth, not a solved problem:
 | Control | Deferred to | Reason |
 |---|---|---|
 | Postgres Row-Level Security | Phase 2 | Repository-layer scoping is the MVP guarantee; RLS is defence in depth once the schema has stabilised |
-| Rate limiting / abuse prevention | Phase 2 | No production traffic yet to tune thresholds against; ships before public launch |
 | SSO (SAML/OIDC) | Phase 3 | RESEARCH 8.1: not required for the developer/startup segment targeted at MVP |
 | File upload malware scanning | Phase 2, with file support | No file upload exists yet in MVP |
 | Automated dependency scanning in CI | Operator setup | Requires the operator's own GitHub security settings; documented in `MANUAL_STEPS.md` |

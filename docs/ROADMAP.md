@@ -6,16 +6,25 @@ cost to maintain, can it wait. Nothing below was cut for lack of ideas — each 
 
 ## Shipped (this build)
 
-Auth + multi-tenancy · provider abstraction (Anthropic verified, OpenAI/Google/OpenRouter unverified
-pricing, offline test provider) · model registry with operator-updatable pricing and staleness flags ·
-heuristic + LLM intent analysis · prompt compiler/optimiser with technique-level provenance · rule-based
-router (single/fallback/parallel/ensemble) · adaptive orchestrator (FAST/BALANCED/DEEP modes; EXPERT
-defined, not yet exercised by a real multi-specialist workload) · deterministic evaluators · LLM judge
-with position/self-preference/verbosity mitigations · raw-vs-optimised and model-vs-model compare · prompt
-versioning with non-destructive rollback · execution tracing · usage ledger with pre-flight budget
-enforcement · exact-match caching · feedback capture · REST API v1 · Next.js UI (playground, compare,
-prompts, models, history, analytics, settings) · offline benchmark harness with an honest refusal to score
-without a real provider · CI (lint, types, tests, migration check, frontend build).
+Auth + multi-tenancy · provider abstraction (Anthropic verified pricing, Groq free-tier fallback,
+OpenAI/Google/OpenRouter unverified pricing, offline test provider) · model registry with
+operator-updatable pricing and staleness flags · heuristic + LLM intent analysis · prompt
+compiler/optimiser with technique-level provenance · rule-based router (single/fallback/parallel/ensemble)
+· adaptive orchestrator (FAST/BALANCED/DEEP modes; EXPERT defined, not yet exercised by a real
+multi-specialist workload) · deterministic evaluators · LLM judge with position/self-preference/verbosity
+mitigations · raw-vs-optimised and model-vs-model compare · prompt versioning with non-destructive rollback
+(including saving a compiled prompt directly from an execution) · execution tracing · usage ledger with
+pre-flight budget enforcement · exact-match caching · feedback capture · REST API v1 · Next.js UI
+(playground, compare, prompts, models, history, analytics, settings, admin) · offline benchmark harness
+with an honest refusal to score without a real provider · CI (lint, types, tests, migration check, frontend
+build).
+
+**Production hardening (added after the initial MVP):** API key issuance/revocation over HTTP with a
+Settings-page panel · an Admin page (member management with a last-owner guard, organization settings,
+audit log, encrypted bring-your-own provider keys) · account self-service (profile editing, password
+change, data export, account deletion) · Redis-backed rate limiting with an in-process fallback · security
+response headers · a retention-purge job that deletes expired execution content while never touching the
+billing ledger or audit log · tenant-supplied provider keys encrypted at rest (Fernet).
 
 ## Phase 2 — next
 
@@ -25,10 +34,9 @@ without a real provider · CI (lint, types, tests, migration check, frontend bui
 | GEPA-style offline prompt optimisation | RESEARCH 2.1: reflective evolution beats RL at far lower cost, and is the natural next step for the Prompt Lab. Needs a dataset per task, which users don't have on day one — hence Phase 2, not MVP. |
 | File upload + retrieval (RAG) | Real user need (document analysis, PDF Q&A) but needs chunking/retrieval infra and storage; not required to prove the core orchestration thesis. |
 | Semantic cache — shadow mode | RESEARCH 7.1: a false hit is invisible and confidently wrong. Ships logging would-be hits only, measured against real traffic, before it ever serves an answer (ADR-005). |
-| Rate limiting / abuse prevention | Needed before public unauthenticated exposure; not needed for authenticated MVP usage. |
 | Postgres Row-Level Security | Defence in depth once the schema is stable; the repository-scoping guarantee is the MVP-level control. |
 | Stripe billing integration | `UsageRecordRow` is the system of record and exporter-ready; wiring an actual payment processor is a business decision requiring a live Stripe account (see `MANUAL_STEPS.md`). |
-| Team RBAC UI | Roles already exist in the schema (`memberships.role`); only the UI for inviting/managing teammates is missing. |
+| Email-based team invitations | The Admin page can add an existing user to a workspace by email, but there's no invite-a-stranger flow yet — that needs a transactional email provider, which is a business decision (see `MANUAL_STEPS.md` §3.5). |
 
 ## Phase 3 — later
 
@@ -51,10 +59,7 @@ advanced cohort analytics.
 
 ## Immediate follow-ups tracked but not yet done in this build
 
-- Retention-deletion scheduled job (the schema and flags exist; the job that actually deletes past
-  `retention_days` is not yet implemented).
-- Rate limiting middleware.
-- API key issuance/revocation: the `api_keys` table, hashing (`generate_api_key`/`verify_api_key`), and
-  the `X-API-Key` auth path (`get_scope`) are implemented and tested, but there is no HTTP route to create
-  or revoke a key yet — today a key can only be inserted directly. A `POST /api-keys` /
-  `DELETE /api-keys/{id}` router plus a Settings-page panel is the concrete next task.
+- Email-based invitations for teammates who don't yet have an account (see Phase 2 table above).
+- The retention-purge job (`app/services/retention.py`) runs via a manual CLI invocation
+  (`python -m app.services.retention`); it is not yet wired to a scheduler (cron/systemd timer/platform
+  scheduled job) — that's an operator decision for the deployment target (see `MANUAL_STEPS.md`).
