@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import type { ExecutionResponse, OrchestrationMode } from "@/lib/types";
-import { Button, Card, ErrorBanner, Spinner, TextArea, WarningBanner } from "@/components/ui";
+import { Button, Card, ErrorBanner, Input, Spinner, TextArea, WarningBanner } from "@/components/ui";
 import {
   CostPanel,
   EvaluationPanel,
@@ -34,6 +35,8 @@ export default function PlaygroundPage() {
   const [result, setResult] = useState<ExecutionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rated, setRated] = useState<"up" | "down" | null>(null);
+  const [saveAsPrompt, setSaveAsPrompt] = useState(false);
+  const [promptName, setPromptName] = useState("");
 
   async function onRun() {
     if (!input.trim() || busy) return;
@@ -42,7 +45,11 @@ export default function PlaygroundPage() {
     setResult(null);
     setRated(null);
     try {
-      const res = await api.execute({ input, mode });
+      const res = await api.execute({
+        input,
+        mode,
+        save_as_prompt: saveAsPrompt && promptName.trim() ? promptName.trim() : null,
+      });
       setResult(res);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -112,6 +119,25 @@ export default function PlaygroundPage() {
             )}
           </Button>
         </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3" style={{ borderColor: "var(--border)" }}>
+          <label className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+            <input
+              type="checkbox"
+              checked={saveAsPrompt}
+              onChange={(e) => setSaveAsPrompt(e.target.checked)}
+            />
+            Save the compiled prompt to the library
+          </label>
+          {saveAsPrompt && (
+            <Input
+              value={promptName}
+              onChange={(e) => setPromptName(e.target.value)}
+              placeholder="prompt name"
+              className="max-w-[220px] py-1.5 text-xs"
+            />
+          )}
+        </div>
       </Card>
 
       {!result && !busy && !error && (
@@ -174,6 +200,15 @@ export default function PlaygroundPage() {
                 <div className="mt-4 border-t pt-4" style={{ borderColor: "var(--border)" }}>
                   <FeedbackButtons onRate={onRate} rated={rated} />
                 </div>
+                {result.saved_prompt_id && (
+                  <p className="mt-2 text-xs text-[var(--ok)]">
+                    Saved to the{" "}
+                    <Link href="/prompts" className="underline">
+                      prompt library
+                    </Link>
+                    .
+                  </p>
+                )}
               </Card>
 
               {result.warnings.length > 0 && (

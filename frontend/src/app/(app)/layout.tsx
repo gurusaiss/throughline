@@ -16,6 +16,8 @@ const NAV = [
   { href: "/settings", label: "Settings", hint: "org & account" },
 ];
 
+const ADMIN_NAV_ITEM = { href: "/admin", label: "Admin", hint: "members, billing, audit" };
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const pathname = usePathname();
@@ -32,6 +34,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+
+  const isAdmin = user.role === "owner" || user.role === "admin";
+  const navItems = isAdmin ? [...NAV, ADMIN_NAV_ITEM] : NAV;
 
   return (
     <div className="flex flex-1" style={{ background: "var(--bg)" }}>
@@ -50,7 +55,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </Link>
 
         <nav className="flex flex-1 flex-col gap-0.5">
-          {NAV.map((item) => {
+          {navItems.map((item) => {
             const active = pathname?.startsWith(item.href);
             return (
               <Link

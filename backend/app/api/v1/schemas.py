@@ -222,6 +222,9 @@ class ExecutionResponse(BaseModel):
     latency_ms: int
     warnings: list[str] = Field(default_factory=list)
     error: str | None = None
+    saved_prompt_id: str | None = Field(
+        default=None, description="Set when ExecuteRequest.save_as_prompt was provided and the save succeeded."
+    )
 
 
 class OptimizeResponse(BaseModel):

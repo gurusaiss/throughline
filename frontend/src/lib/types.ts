@@ -121,6 +121,7 @@ export interface ExecutionResponse {
   latency_ms: number;
   warnings: string[];
   error: string | null;
+  saved_prompt_id: string | null;
 }
 
 export interface OptimizeResponse {
@@ -253,4 +254,77 @@ export interface ApiErrorBody {
   code: string;
   message: string;
   detail?: string;
+}
+
+// --- API keys ---------------------------------------------------------------------------
+export interface ApiKeyCreatedResponse {
+  id: string;
+  name: string;
+  key: string;
+  key_prefix: string;
+  created_at: string;
+  warning: string;
+}
+
+export interface ApiKeySummary {
+  id: string;
+  name: string;
+  key_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  is_active: boolean;
+}
+
+// --- Admin: members -----------------------------------------------------------------------
+export type OrgRole = "owner" | "admin" | "member" | "viewer";
+
+export interface MemberResponse {
+  user_id: string;
+  email: string;
+  display_name: string;
+  role: OrgRole;
+  joined_at: string;
+}
+
+// --- Admin: organization settings -----------------------------------------------------------
+export interface OrgSettingsResponse {
+  id: string;
+  name: string;
+  slug: string;
+  plan: string;
+  monthly_budget_usd: number;
+  current_spend_usd: number;
+  retention_days: number;
+  store_raw_prompts: boolean;
+  created_at: string;
+}
+
+// --- Admin: audit log -----------------------------------------------------------------------
+export interface AuditLogEntry {
+  id: string;
+  occurred_at: string;
+  action: string;
+  user_id: string | null;
+  resource_type: string;
+  resource_id: string;
+  ip_address: string;
+  detail: Record<string, unknown>;
+}
+
+// --- Admin: provider accounts (bring-your-own provider keys) --------------------------------
+export interface ProviderAccountResponse {
+  id: string;
+  provider: string;
+  label: string;
+  key_last_four: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+// --- Account self-service ---------------------------------------------------------------------
+export interface DataExportResponse {
+  user: Record<string, unknown>;
+  memberships: Record<string, unknown>[];
+  execution_count: number;
+  note: string;
 }

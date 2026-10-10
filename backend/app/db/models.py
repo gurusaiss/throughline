@@ -74,7 +74,15 @@ class Organization(Base, TimestampMixin):
     retention_days: Mapped[int] = mapped_column(Integer, default=90)
     store_raw_prompts: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    memberships: Mapped[list[Membership]] = relationship(back_populates="organization")
+    # passive_deletes=True: `memberships.user_id`/`org_id` are NOT NULL with a DB-level ON DELETE CASCADE
+    # (see Membership below). Without this flag, SQLAlchemy's default behaviour on `session.delete(org)`
+    # is to try to ORPHAN child Membership rows by UPDATE-ing their foreign key to NULL before deleting
+    # the parent — which violates the NOT NULL constraint instead of ever reaching the database's own
+    # cascade. This flag tells the ORM to leave child rows alone and trust the database to cascade the
+    # delete itself, which is both correct and faster (no SELECT-then-UPDATE round trip per child row).
+    memberships: Mapped[list[Membership]] = relationship(
+        back_populates="organization", passive_deletes=True
+    )
 
     __table_args__ = (CheckConstraint("monthly_budget_usd >= 0", name="ck_org_budget_non_negative"),)
 
@@ -93,7 +101,8 @@ class User(Base, TimestampMixin):
     preferences: Mapped[dict[str, Any]] = mapped_column(JSONType, default=dict)
     memory_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    memberships: Mapped[list[Membership]] = relationship(back_populates="user")
+    # See the matching comment on Organization.memberships — same fix, same reason.
+    memberships: Mapped[list[Membership]] = relationship(back_populates="user", passive_deletes=True)
 
 
 class Membership(Base, TimestampMixin):

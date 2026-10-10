@@ -5,11 +5,19 @@
 import type {
   AnalyticsResponse,
   ApiErrorBody,
+  ApiKeyCreatedResponse,
+  ApiKeySummary,
+  AuditLogEntry,
   CompareResponse,
+  DataExportResponse,
   ExecutionResponse,
   ExecutionSummary,
+  MemberResponse,
   ModelResponse,
   OptimizeResponse,
+  OrgRole,
+  OrgSettingsResponse,
+  ProviderAccountResponse,
   PromptResponse,
   PromptVersionResponse,
   TokenResponse,
@@ -142,6 +150,7 @@ export interface ExecuteInput extends EngineRequestInput {
   max_output_tokens?: number | null;
   enable_judge?: boolean | null;
   max_cost_usd?: number | null;
+  save_as_prompt?: string | null;
 }
 
 export async function execute(body: ExecuteInput): Promise<ExecutionResponse> {
@@ -232,4 +241,127 @@ export async function submitFeedback(input: {
 
 export async function getAnalytics(days = 30): Promise<AnalyticsResponse> {
   return request<AnalyticsResponse>(`/analytics?days=${days}`);
+}
+
+// ---------------------------------------------------------------------------------------
+// API keys
+// ---------------------------------------------------------------------------------------
+export async function createApiKey(name: string): Promise<ApiKeyCreatedResponse> {
+  return request<ApiKeyCreatedResponse>("/api-keys", { method: "POST", body: JSON.stringify({ name }) });
+}
+
+export async function listApiKeys(): Promise<ApiKeySummary[]> {
+  return request<ApiKeySummary[]>("/api-keys");
+}
+
+export async function revokeApiKey(keyId: string): Promise<void> {
+  await request<void>(`/api-keys/${keyId}`, { method: "DELETE" });
+}
+
+// ---------------------------------------------------------------------------------------
+// Admin: members
+// ---------------------------------------------------------------------------------------
+export async function listMembers(): Promise<MemberResponse[]> {
+  return request<MemberResponse[]>("/admin/members");
+}
+
+export async function addMember(email: string, role: OrgRole = "member"): Promise<MemberResponse> {
+  return request<MemberResponse>("/admin/members", {
+    method: "POST",
+    body: JSON.stringify({ email, role }),
+  });
+}
+
+export async function updateMemberRole(userId: string, role: OrgRole): Promise<MemberResponse> {
+  return request<MemberResponse>(`/admin/members/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function removeMember(userId: string): Promise<void> {
+  await request<void>(`/admin/members/${userId}`, { method: "DELETE" });
+}
+
+// ---------------------------------------------------------------------------------------
+// Admin: organization settings
+// ---------------------------------------------------------------------------------------
+export async function getOrganizationSettings(): Promise<OrgSettingsResponse> {
+  return request<OrgSettingsResponse>("/admin/organization");
+}
+
+export async function updateOrganizationSettings(input: {
+  name?: string;
+  monthly_budget_usd?: number;
+  retention_days?: number;
+  store_raw_prompts?: boolean;
+}): Promise<OrgSettingsResponse> {
+  return request<OrgSettingsResponse>("/admin/organization", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+// ---------------------------------------------------------------------------------------
+// Admin: audit log
+// ---------------------------------------------------------------------------------------
+export async function listAuditLogs(opts: {
+  limit?: number;
+  offset?: number;
+  action?: string;
+} = {}): Promise<AuditLogEntry[]> {
+  const params = new URLSearchParams();
+  if (opts.limit) params.set("limit", String(opts.limit));
+  if (opts.offset) params.set("offset", String(opts.offset));
+  if (opts.action) params.set("action", opts.action);
+  const qs = params.toString();
+  return request<AuditLogEntry[]>(`/admin/audit-logs${qs ? `?${qs}` : ""}`);
+}
+
+// ---------------------------------------------------------------------------------------
+// Admin: provider accounts (bring-your-own provider keys)
+// ---------------------------------------------------------------------------------------
+export async function listProviderAccounts(): Promise<ProviderAccountResponse[]> {
+  return request<ProviderAccountResponse[]>("/admin/provider-accounts");
+}
+
+export async function createProviderAccount(input: {
+  provider: string;
+  label?: string;
+  api_key: string;
+}): Promise<ProviderAccountResponse> {
+  return request<ProviderAccountResponse>("/admin/provider-accounts", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteProviderAccount(accountId: string): Promise<void> {
+  await request<void>(`/admin/provider-accounts/${accountId}`, { method: "DELETE" });
+}
+
+// ---------------------------------------------------------------------------------------
+// Account self-service
+// ---------------------------------------------------------------------------------------
+export async function updateProfile(input: {
+  display_name?: string;
+  memory_enabled?: boolean;
+}): Promise<UserResponse> {
+  return request<UserResponse>("/account/profile", { method: "PATCH", body: JSON.stringify(input) });
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await request<void>("/account/change-password", {
+    method: "POST",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+}
+
+export async function exportAccountData(): Promise<DataExportResponse> {
+  return request<DataExportResponse>("/account/export");
+}
+
+export async function deleteAccount(): Promise<void> {
+  await request<void>("/account", { method: "DELETE" });
+  setTokens(null);
 }

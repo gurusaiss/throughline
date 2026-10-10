@@ -9,6 +9,7 @@ import uuid
 
 from fastapi import APIRouter, Request
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
     BudgetDep,
@@ -19,7 +20,7 @@ from app.api.deps import (
 )
 from app.api.v1 import mappers, schemas
 from app.core.errors import NotFoundError
-from app.db.models import Project
+from app.db.models import Project, Prompt, PromptVersion
 from app.evaluation import deterministic
 from app.pipeline.orchestrator import ExecutionRequest, ExecutionResult
 from app.pipeline.types import OrchestrationMode
@@ -94,7 +95,59 @@ async def execute(
     await save_execution(
         session, result, scope, store_raw=org.store_raw_prompts, project_id=body.project_id
     )
-    return mappers.to_execution_response(result)
+
+    response = mappers.to_execution_response(result)
+    if body.save_as_prompt:
+        response.saved_prompt_id = await _save_as_prompt(
+            session, result, scope.org_id, scope.user_id, body.project_id, body.save_as_prompt
+        )
+    return response
+
+
+async def _save_as_prompt(
+    session: AsyncSession,
+    result: ExecutionResult,
+    org_id: str,
+    user_id: str | None,
+    project_id: str | None,
+    name: str,
+) -> str | None:
+    """Turn what the optimiser actually produced into a saved, versioned prompt (rule 15).
+
+    This is what `ExecuteRequest.save_as_prompt` is for — it was defined on the schema but never
+    implemented, which made the Playground's "save as prompt" button a dead click. Saves the COMPILED
+    prompt (system/user text as the optimiser rendered it), not the user's raw input, since that is the
+    artefact worth reusing and versioning.
+    """
+    if result.prompt is None:
+        return None
+
+    prompt = Prompt(
+        org_id=org_id,
+        project_id=project_id,
+        created_by=user_id,
+        name=name,
+        task_type=result.spec.task_type.value if result.spec else "general_qa",
+    )
+    session.add(prompt)
+    await session.flush()
+
+    version = PromptVersion(
+        org_id=org_id,
+        prompt_id=prompt.id,
+        version=1,
+        created_by=user_id,
+        system_text=result.prompt.system,
+        user_text=result.prompt.user,
+        output_schema=result.prompt.output_schema,
+        optimization_decision=result.prompt.decision.model_dump(),
+        notes=f"Saved from execution {result.execution_id}.",
+    )
+    session.add(version)
+    await session.flush()
+    prompt.active_version_id = version.id
+
+    return prompt.id
 
 
 @router.post("/compare", response_model=schemas.CompareResponse)

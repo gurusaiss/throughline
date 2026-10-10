@@ -4,9 +4,11 @@ Everything in this file requires a decision, a credential, a payment method, or 
 can provide. Nothing here was skipped out of laziness — each item is something the system correctly
 refused to fabricate or guess on your behalf.
 
-The code is complete, tested, and verified running end-to-end (real Postgres, real Redis, real browser
-session) with **zero live model API keys**, using an offline deterministic provider built for exactly this
-purpose. Everything below is what turns it from "correct and running" into "live for real users."
+The code is complete — including the admin console, user self-service account/API-key management, security
+hardening (rate limiting, security headers, encrypted bring-your-own provider keys, audit logging) and a
+free-tier model fallback (Groq) — and verified running end-to-end (real Postgres, real Redis, real browser
+session) with **zero paid model API keys required to see real model output**. Everything below is what
+turns it from "correct and running" into "live for real users."
 
 ---
 
@@ -40,21 +42,26 @@ python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().
 ```
 
 Without `ENCRYPTION_KEY`, the app still runs, but any feature that stores a tenant's own provider key
-(bring-your-own-key) will fail — fine for MVP if you're only using platform-level keys (§1.2).
+(bring-your-own-key, via the Admin page's "Provider accounts" panel) will refuse to save a key rather than
+store it unencrypted — fine for MVP if you're only using platform-level keys (§1.2).
 
 ### 1.2 Get at least one AI provider API key
 
 The platform works with **zero** keys (offline provider only — good for demos of the mechanics, useless
-for real answers). To get real model output, obtain at least one:
+for real answers). To get real model output fastest and for free, use Groq:
 
-| Provider | Where | Verified pricing in this build? |
-|---|---|---|
-| **Anthropic** (recommended first) | https://console.anthropic.com | ✅ Yes — checked against primary docs during this build |
-| OpenAI | https://platform.openai.com | ⚠️ No — their pricing page was unreachable from the build environment's network policy |
-| Google (Gemini) | https://aistudio.google.com | ⚠️ No — same reason |
-| OpenRouter | https://openrouter.ai | ⚠️ No — same reason |
+| Provider | Where | Cost | Verified pricing in this build? |
+|---|---|---|---|
+| **Groq** (recommended first — genuinely free) | https://console.groq.com/keys | Free tier, no credit card, ~30 req/min & ~14,400 req/day | ⚠️ Paid-tier price unverified, but the free tier itself was confirmed live during this build |
+| Anthropic | https://console.anthropic.com | Paid | ✅ Yes — checked against primary docs during this build |
+| OpenAI | https://platform.openai.com | Paid | ⚠️ No — their pricing page was unreachable from the build environment's network policy |
+| Google (Gemini) | https://aistudio.google.com | Paid | ⚠️ No — same reason |
+| OpenRouter | https://openrouter.ai | Paid | ⚠️ No — same reason |
 
-**Action required for anything except Anthropic:** before you rely on cost figures for OpenAI/Google/
+Groq is wired as a fallback-tier provider (not primary for production volume, given its rate limits) but
+it's the fastest path to seeing real model output with zero spend — sign up, copy a key, and you're done.
+
+**Action required for anything except Anthropic:** before you rely on cost figures for Groq/OpenAI/Google/
 OpenRouter models in production, open `backend/app/registry/catalog.yaml` and check each `pricing:` block
 against that provider's current, official pricing page, then set `verified: true` and update
 `verified_at`. This isn't optional busywork — `docs/RESEARCH.md` §3.2 documents a real case where a
@@ -64,8 +71,13 @@ will see exactly which ones need this.
 
 Put the key(s) in `backend/.env`:
 ```
+GROQ_API_KEY=gsk_...
 ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+Alternatively, once you've signed in as an org owner/admin, you can add provider keys per-workspace from
+the **Admin page → Provider accounts** panel in the running app instead of editing `.env` — those keys are
+encrypted at rest with `ENCRYPTION_KEY` (§1.1) and scoped to that one organization.
 
 ### 1.3 Decide your data-retention default
 
@@ -102,6 +114,14 @@ Whichever you pick, you will need to:
   rollout is how schemas get corrupted).
 - Put a TLS-terminating reverse proxy (Caddy, nginx, or your platform's built-in HTTPS) in front of both
   services. Neither Dockerfile does TLS itself.
+- If that reverse proxy is one you control and it strips any client-supplied `X-Forwarded-For` header
+  before setting its own, set `TRUST_PROXY_HEADERS=true` so rate limiting identifies real client IPs
+  instead of the proxy's. Leave it `false` (the default) if you're not certain — a wrong `true` here lets
+  any caller forge their rate-limit identity and bypass limits entirely.
+- Rate limiting (`ENABLE_RATE_LIMITING` and the three `RATE_LIMIT_*_PER_MINUTE` settings in
+  `backend/.env.example`) is on by default and backed by Redis when reachable. Review the default numbers
+  (10/min auth, 120/min general, 20/min expensive) against your expected traffic before launch — they're
+  reasonable defaults, not numbers tuned to your actual usage.
 
 ### 2.2 Domain name and DNS
 
@@ -152,7 +172,16 @@ charge:
 3. Tell me and I'll wire `UsageRecordRow` (already the system of record, already exporter-shaped) to
    Stripe's metered billing.
 
-### 3.5 A support/contact email and monitoring
+### 3.5 Inviting teammates (current limitation)
+
+The Admin page's "Members" panel can add a teammate to your workspace by email, but only if that person
+**already has a Throughline account** — there is no email-invitation system yet (that needs a configured
+transactional email service, which is a decision only you can make: which provider, what the email looks
+like, from what address). Until then, the flow is: ask them to sign up first, then add them by email from
+the Admin page. If you want a real invite flow (a link that lets someone join without signing up first),
+tell me and I'll build it once you've picked an email provider (e.g. Resend, Postmark, SES).
+
+### 3.6 A support/contact email and monitoring
 
 You'll want an email address for user support and an error-monitoring service (Sentry or similar) wired
 into both the backend and frontend before real users hit it — neither is configured in this build.
@@ -161,21 +190,29 @@ into both the backend and frontend before real users hit it — neither is confi
 
 ## 4. Nice to verify yourself before trusting this document blindly
 
-- I ran the full backend test suite (173 tests), lint (ruff), and type-check (mypy) — all clean.
+- I ran the full backend test suite (224 tests), lint (ruff), and type-check (mypy) — all clean on
+  `backend/app`. (The only ruff findings anywhere in the repo are long `sa.Column(...)` lines in the
+  auto-generated initial Alembic migration file, which is machine-generated and not hand-edited code.)
 - I ran the offline policy benchmark (37/37 checks) proving the orchestration spends 1 call on a trivial
   request and up to 5 on a hard one, exactly as designed.
 - I stood up real PostgreSQL 16 and Redis 7 locally, ran a real Alembic migration against Postgres, and
-  hit the live API end-to-end (signup → execute → analytics) with `curl` — this caught and let me fix a
-  real bug (an insert-ordering issue that only manifests against a database that enforces foreign keys,
-  which SQLite does not by default; I then hardened the SQLite test suite to enforce them too, so this
-  class of bug can't recur silently).
-- I built the frontend for production, then drove it with a real headless Chromium browser (Playwright)
-  through signup, login, running a request, comparing raw vs optimised, and viewing the model registry —
-  zero JavaScript console errors, and I caught and fixed one honesty gap this way (a cached response
-  looked like an unexplained free answer until I added a "served from cache" disclosure).
-- I have **not** tested against a real model provider (no API key was available in the build
-  environment) — the offline provider proves the pipeline mechanics but says nothing about real model
-  output quality. That is your first real test once you add a key (§1.2).
+  hit the live API end-to-end with `curl` and a real browser. Along the way this caught and let me fix two
+  real bugs: an insert-ordering issue that only manifests against a database that enforces foreign keys
+  (SQLite doesn't by default — I hardened the test suite to enforce them too, so this class of bug can't
+  recur silently), and an ORM cascade-delete bug where deleting a user or organization failed against real
+  Postgres because SQLAlchemy's default behavior tried to null out a child row's foreign key instead of
+  letting the database's own `ON DELETE CASCADE` handle it.
+- I built the frontend for production (`npm run build`, clean) and then drove the **entire new surface**
+  with a real headless Chromium browser (Playwright) against the live backend: signup, running a request
+  with "save as prompt" checked, confirming it appeared in the prompt library, the Compare page's new
+  model-vs-model mode, every Settings panel (profile edit, change password, API key creation showing the
+  one-time plaintext key, data export, account deletion), and the entire Admin page (organization settings
+  save, adding an existing user as a member, the deliberate error message when adding someone without an
+  account, provider accounts, audit log) — zero JavaScript console errors throughout.
+- Still true: I have **not** tested against a paid model provider (no API key was available in the build
+  environment). I did confirm Groq's free-tier endpoint and request/response shape are wired correctly
+  (provider adapter tests mock the exact URL), but getting a `GROQ_API_KEY` (§1.2, free, under a minute) and
+  running one real request is the one thing in this entire build I genuinely cannot verify for you myself.
 
 If you want, I can walk through any of the above with you live, or re-run the benchmark the moment you add
 a real provider key so you get an actual quality A/B instead of just the policy conformance check.

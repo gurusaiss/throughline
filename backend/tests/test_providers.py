@@ -24,6 +24,7 @@ from app.core.errors import (
 from app.providers.anthropic import AnthropicProvider, _to_anthropic_schema
 from app.providers.base import ModelRequest
 from app.providers.google import GoogleProvider, _to_gemini_schema
+from app.providers.groq import GroqProvider
 from app.providers.openai_compatible import (
     OpenAIProvider,
     OpenRouterProvider,
@@ -298,6 +299,62 @@ class TestGoogleAdapter:
         provider = GoogleProvider(api_key="k")
         with pytest.raises(ContentFiltered):
             await provider.complete(req("g"))
+        await provider.aclose()
+
+
+# ======================================================================================
+# Groq — the genuine free-tier fallback (MANUAL_STEPS.md §1.2)
+# ======================================================================================
+class TestGroqAdapter:
+    @respx.mock
+    async def test_hits_the_real_groq_endpoint(self) -> None:
+        """The whole point of the base_url split: this concatenation must land on the real URL, not a
+        plausible-looking wrong one. Verified directly against the documented Groq endpoint shape."""
+        route = respx.post("https://api.groq.com/openai/v1/chat/completions").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "id": "g1",
+                    "model": "llama-3.3-70b-versatile",
+                    "choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 4, "completion_tokens": 2},
+                },
+            )
+        )
+        provider = GroqProvider(api_key="gsk_test")
+        resp = await provider.complete(req("llama-3.3-70b-versatile"))
+        assert route.called
+        assert resp.text == "hi"
+        await provider.aclose()
+
+    async def test_does_not_claim_vision_or_prompt_caching(self) -> None:
+        """Claiming a capability the free-tier text models don't have would route vision/cache-sensitive
+        work to a model that can't do it."""
+        from app.providers.base import Capability
+
+        provider = GroqProvider(api_key="k")
+        assert not provider.supports(Capability.VISION)
+        assert not provider.supports(Capability.PROMPT_CACHING)
+        assert provider.supports(Capability.TEXT)
+        assert provider.supports(Capability.STRUCTURED_OUTPUT)
+
+    async def test_uses_loose_json_mode_not_strict_schema(self) -> None:
+        """Groq serves models from several labs with inconsistent strict-schema support (ADR-010); the
+        core re-validates locally regardless, so this is a safe default rather than a weaker guarantee."""
+        assert GroqProvider.supports_json_schema is False
+
+    @respx.mock
+    async def test_rate_limit_is_normalised_like_every_other_provider(self) -> None:
+        """The free tier is aggressively rate limited — this is the error path a fallback tier hits often,
+        so it must come back as the same ProviderRateLimited the orchestrator already knows how to retry."""
+        respx.post("https://api.groq.com/openai/v1/chat/completions").mock(
+            return_value=httpx.Response(
+                429, json={"error": {"message": "rate limit"}}, headers={"retry-after": "2"}
+            )
+        )
+        provider = GroqProvider(api_key="k")
+        with pytest.raises(ProviderRateLimited):
+            await provider.complete(req())
         await provider.aclose()
 
 

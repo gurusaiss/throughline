@@ -27,6 +27,9 @@ providers:
   - name: openrouter
     display_name: OpenRouter
     docs: https://openrouter.ai/models
+  - name: groq
+    display_name: Groq
+    docs: https://console.groq.com/docs/models
   - name: scripted
     display_name: Offline (development/test only)
     docs: ""
@@ -229,6 +232,54 @@ models:
       effective_until: "2026-12-31"
       source: https://kunavo.com/guides/gemini-api-pricing-2026
       note: "Introductory pricing. Secondary sources report $1.50/$7.50 from 2027-01-01. VERIFY."
+    available: true
+
+  # ----------------------------------------------------------------------------------
+  # Groq — UNVERIFIED pricing (console.groq.com was not fetched directly during this build; figures
+  # below are from secondary aggregator sources, RESEARCH.md). What IS confirmed directly against Groq's
+  # own published free-tier terms: a free tier exists with no credit card required, so these models are
+  # usable at zero cost up to the free-tier rate limit regardless of the per-token price below being
+  # unverified — operator should confirm paid-tier pricing before relying on cost estimates past the free
+  # tier (see MANUAL_STEPS.md).
+  # ----------------------------------------------------------------------------------
+  - id: llama-3.3-70b-versatile
+    provider: groq
+    display_name: Llama 3.3 70B Versatile (Groq)
+    family: llama
+    tier: balanced
+    context_window: 128000
+    max_output_tokens: 32768
+    modalities: [text]
+    capabilities: [text, structured_output, tool_use, streaming, reasoning, long_context]
+    quality_index: 78
+    speed_index: 98  # Groq's LPU inference is the fastest tier in this catalogue by design
+    pricing:
+      input_per_mtok: 0.59
+      output_per_mtok: 0.79
+      verified: false
+      verified_at: "2026-09-17"
+      source: https://www.cloudzero.com/blog/groq-pricing/
+      note: "Free tier available with no credit card (confirmed); per-token price above is the PAID tier, unverified against console.groq.com directly."
+    available: true
+
+  - id: llama-3.1-8b-instant
+    provider: groq
+    display_name: Llama 3.1 8B Instant (Groq)
+    family: llama
+    tier: fast
+    context_window: 128000
+    max_output_tokens: 8192
+    modalities: [text]
+    capabilities: [text, structured_output, tool_use, streaming, long_context]
+    quality_index: 62
+    speed_index: 100
+    pricing:
+      input_per_mtok: 0.05
+      output_per_mtok: 0.08
+      verified: false
+      verified_at: "2026-09-17"
+      source: https://www.cloudzero.com/blog/groq-pricing/
+      note: "Free tier available with no credit card (confirmed); per-token price above is the PAID tier, unverified against console.groq.com directly."
     available: true
 
   # ----------------------------------------------------------------------------------

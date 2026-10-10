@@ -12,6 +12,7 @@ from app.core.config import Settings
 from app.providers.anthropic import AnthropicProvider
 from app.providers.base import Capability, Chunk, Message, ModelRequest, ModelResponse, Provider
 from app.providers.google import GoogleProvider
+from app.providers.groq import GroqProvider
 from app.providers.openai_compatible import (
     OpenAICompatibleProvider,
     OpenAIProvider,
@@ -24,6 +25,7 @@ PROVIDER_CLASSES: dict[str, type[Provider]] = {
     "openai": OpenAIProvider,
     "google": GoogleProvider,
     "openrouter": OpenRouterProvider,
+    "groq": GroqProvider,
     "scripted": ScriptedProvider,
 }
 
@@ -32,6 +34,7 @@ __all__ = [
     "Capability",
     "Chunk",
     "GoogleProvider",
+    "GroqProvider",
     "Message",
     "ModelRequest",
     "ModelResponse",
@@ -56,6 +59,7 @@ class ProviderPool:
             "openai": settings.openai_api_key,
             "google": settings.google_api_key,
             "openrouter": settings.openrouter_api_key,
+            "groq": settings.groq_api_key,
         }
 
     def _scripted_allowed(self) -> bool:

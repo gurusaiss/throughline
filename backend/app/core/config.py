@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     google_api_key: str = ""
     openrouter_api_key: str = ""
+    # Groq offers a genuine free tier (no credit card) over an OpenAI-compatible endpoint — confirmed live
+    # during this build. Setting ONLY this key still gets a tenant real model output with zero spend,
+    # which is why MANUAL_STEPS.md recommends it as the first key to add. See app/providers/groq.py.
+    groq_api_key: str = ""
 
     # --- orchestration policy ---
     default_mode: str = "auto"
@@ -68,6 +72,19 @@ class Settings(BaseSettings):
     # --- privacy ---
     log_raw_prompts: bool = False  # off by default (rule 28)
     default_retention_days: int = 90
+
+    # --- rate limiting ---
+    # Auth endpoints are the credential-stuffing target, so they get a much tighter window than general
+    # traffic. Expensive endpoints (/execute, /compare) get their own limit because each call spends real
+    # money, independent of how chatty the caller is otherwise.
+    enable_rate_limiting: bool = True
+    rate_limit_auth_per_minute: int = 10
+    rate_limit_general_per_minute: int = 120
+    rate_limit_expensive_per_minute: int = 20
+    # Only trust X-Forwarded-For when the app is actually deployed behind a proxy that sets it honestly —
+    # blindly trusting it otherwise lets any caller forge their own rate-limit identity (see
+    # app/core/middleware.py).
+    trust_proxy_headers: bool = False
 
     @property
     def cors_origins(self) -> list[str]:
