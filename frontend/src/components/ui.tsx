@@ -12,12 +12,12 @@ export function Card({
 }: {
   children: ReactNode;
   className?: string;
-  /** Row/tile that is actually clickable — gets a lift-and-shadow hover rather than sitting static. */
+  /** Row/tile that is actually clickable — gets an edge-engage hover rather than sitting static. */
   interactive?: boolean;
 }) {
   return (
     <div
-      className={`rounded-[var(--radius-lg)] border bg-[var(--surface)] shadow-[var(--shadow-sm)] ${interactive ? "lift-on-hover cursor-pointer" : ""} ${className}`}
+      className={`rounded-[var(--radius-lg)] border bg-[var(--surface)] ${interactive ? "lift-on-hover cursor-pointer overflow-hidden" : ""} ${className}`}
       style={{ borderColor: "var(--border)" }}
     >
       {children}
@@ -35,18 +35,18 @@ export function Button({
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md";
 }) {
+  // A button is a switch, not a balloon: it sinks in on press and releases, it doesn't float up on
+  // hover. No shadow, no lift — just a state change (fill/border) and a real, small displacement on click.
   const base =
     "inline-flex items-center justify-center gap-1.5 font-medium rounded-[var(--radius-md)] " +
-    "transition-[background-color,border-color,box-shadow,transform] duration-[var(--dur-fast)] ease-[var(--ease-soft)] " +
-    "active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
+    "transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-press)] " +
+    "active:translate-y-px disabled:opacity-40 disabled:cursor-not-allowed disabled:active:translate-y-0";
   const sizes = size === "sm" ? "text-xs px-2.5 py-1.5" : "text-sm px-3.5 py-2";
   const variants: Record<string, string> = {
-    primary:
-      "bg-[var(--accent)] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--accent-strong)] hover:shadow-[var(--shadow-md)] hover:-translate-y-px active:translate-y-0",
-    secondary:
-      "bg-[var(--surface)] text-[var(--text)] border hover:bg-[var(--accent-tint)] hover:border-[var(--accent)]",
+    primary: "bg-[var(--accent)] text-white hover:bg-[var(--accent-strong)]",
+    secondary: "bg-[var(--surface)] text-[var(--text)] border hover:bg-[var(--accent-tint)] hover:border-[var(--accent)]",
     ghost: "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--accent-tint)]",
-    danger: "bg-[var(--danger)] text-white hover:brightness-110 hover:shadow-[var(--shadow-md)] hover:-translate-y-px active:translate-y-0",
+    danger: "bg-[var(--danger)] text-white hover:brightness-110",
   };
   return (
     <button
@@ -68,16 +68,18 @@ export function Badge({
   tone?: "neutral" | "ok" | "warn" | "danger" | "accent";
   className?: string;
 }) {
+  // A labelled reading, not a status pill: square corners, a left tick instead of a fully-rounded chip —
+  // the shape every AI dashboard uses for exactly this. Reads like a gauge annotation instead.
   const tones: Record<string, string> = {
-    neutral: "bg-[var(--bg)] text-[var(--text-muted)] border-[var(--border)]",
-    ok: "bg-[var(--ok-tint)] text-[var(--ok)] border-transparent",
-    warn: "bg-[var(--warn-tint)] text-[var(--warn)] border-transparent",
-    danger: "bg-[var(--danger-tint)] text-[var(--danger)] border-transparent",
-    accent: "bg-[var(--accent-tint)] text-[var(--accent-strong)] border-transparent",
+    neutral: "text-[var(--text-muted)] border-[var(--border-strong)]",
+    ok: "text-[var(--ok)] border-[var(--ok)]",
+    warn: "text-[var(--warn)] border-[var(--warn)]",
+    danger: "text-[var(--danger)] border-[var(--danger)]",
+    accent: "text-[var(--accent-strong)] border-[var(--accent)]",
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium mono ${tones[tone]} ${className}`}
+      className={`mono inline-flex items-center border-l-2 pl-1.5 pr-0.5 py-0.5 text-[11px] font-medium leading-none ${tones[tone]} ${className}`}
     >
       {children}
     </span>

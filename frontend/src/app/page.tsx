@@ -37,7 +37,7 @@ export default function Home() {
           </Link>
           <Link
             href="/signup"
-            className="rounded-[var(--radius-md)] px-3.5 py-2 text-sm font-medium text-white shadow-[var(--shadow-sm)] transition-[background-color,box-shadow,transform] duration-[var(--dur-fast)] ease-[var(--ease-soft)] hover:-translate-y-px hover:shadow-[var(--shadow-md)]"
+            className="rounded-[var(--radius-md)] px-3.5 py-2 text-sm font-medium text-white transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-press)] hover:bg-[var(--accent-strong)] active:translate-y-px"
             style={{ background: "var(--accent)" }}
           >
             Get started
@@ -49,8 +49,8 @@ export default function Home() {
         <div className="grid flex-1 grid-cols-1 items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="animate-fade-in flex flex-col items-start">
             <span
-              className="mono mb-5 rounded-full border px-2.5 py-1 text-[11px]"
-              style={{ borderColor: "var(--border)", color: "var(--text-muted)" }}
+              className="mono mb-4 border-l-2 pl-2 text-[11px] uppercase tracking-[0.08em]"
+              style={{ borderColor: "var(--accent)", color: "var(--text-faint)" }}
             >
               intent → optimised request → routed model → evaluated result
             </span>
@@ -69,7 +69,7 @@ export default function Home() {
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
                 href="/signup"
-                className="rounded-[var(--radius-md)] px-5 py-2.5 text-sm font-medium text-white shadow-[var(--shadow-sm)] transition-[background-color,box-shadow,transform] duration-[var(--dur-fast)] ease-[var(--ease-soft)] hover:-translate-y-px hover:shadow-[var(--shadow-md)] active:translate-y-0 active:scale-[0.98]"
+                className="rounded-[var(--radius-md)] px-5 py-2.5 text-sm font-medium text-white transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-press)] hover:bg-[var(--accent-strong)] active:translate-y-px"
                 style={{ background: "var(--accent)" }}
               >
                 Start optimising requests
@@ -121,7 +121,7 @@ function SignalDiagram() {
     { label: "evaluated", detail: "checked before it reaches you" },
   ];
   return (
-    <div className="animate-fade-in hidden rounded-[var(--radius-lg)] border bg-[var(--surface)] p-6 shadow-[var(--shadow-sm)] lg:block" style={{ borderColor: "var(--border)" }}>
+    <div className="animate-fade-in hidden rounded-[var(--radius-lg)] border bg-[var(--surface)] p-6 lg:block" style={{ borderColor: "var(--border)" }}>
       <svg viewBox="0 0 280 160" className="w-full" aria-hidden="true">
         <line x1="20" y1="80" x2="260" y2="80" stroke="var(--border-strong)" strokeWidth="1.5" />
         {[20, 140, 260].map((x, i) => (

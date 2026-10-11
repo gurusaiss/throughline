@@ -34,20 +34,24 @@
 
   --focus-ring: #a4531a;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  /* Sharp, not soft: an instrument panel has edges, not squishy app-icon corners. */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
 
-  --shadow-sm: 0 1px 2px rgba(28, 26, 22, 0.06);
-  --shadow-md: 0 4px 16px rgba(28, 26, 22, 0.08);
-  --shadow-lg: 0 12px 32px rgba(28, 26, 22, 0.12);
+  /* Flat by default. Shadow is reserved for things that genuinely float above the page (nothing here
+     does, by design) — everything else reads through a 1px hairline, like a printed panel, not a
+     stack of glowing cards. */
+  --shadow-sm: none;
+  --shadow-md: 0 2px 10px rgba(28, 26, 22, 0.1);
+  --shadow-lg: 0 8px 24px rgba(28, 26, 22, 0.16);
 
-  /* Motion: two named curves instead of browser defaults — "soft" for anything settling into place
-     (cards, panels, fades), "snap" for anything that should feel pressed/released (buttons, toggles). */
+  /* Motion: "soft" for anything settling into place (fades, panels); "press" for anything mechanical —
+     a button is a switch, not a balloon, so it should sink in and snap back, never lift and bounce. */
   --ease-soft: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --dur-fast: 140ms;
-  --dur-base: 220ms;
+  --ease-press: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 110ms;
+  --dur-base: 180ms;
 
   color-scheme: light;
 }
@@ -77,9 +81,9 @@
 
     --focus-ring: #e08a45;
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+    --shadow-sm: none;
+    --shadow-md: 0 2px 14px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
 
     color-scheme: dark;
   }
@@ -105,9 +109,9 @@
   --danger: #e2685a;
   --danger-tint: #301e1b;
   --focus-ring: #e08a45;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-sm: none;
+  --shadow-md: 0 2px 14px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
 
@@ -218,18 +222,38 @@ h1 {
   background-size: 100% 1px;
 }
 
-/* Shared hover-lift used by interactive cards/rows: a small rise plus a shadow that grows underneath it,
-   like the element is actually lifting off the paper rather than just gaining a glow. */
+/* Shared hover treatment for interactive rows/tiles: the panel stays flat on the page (no floating-card
+   lift — that reads as a glossy app icon, not an instrument), but its border and left edge engage, like a
+   row becoming selected on a control surface. */
 .lift-on-hover {
+  position: relative;
   transition:
-    transform var(--dur-base) var(--ease-soft),
-    box-shadow var(--dur-base) var(--ease-soft),
-    border-color var(--dur-base) var(--ease-soft);
+    border-color var(--dur-base) var(--ease-soft),
+    background-color var(--dur-base) var(--ease-soft);
+}
+.lift-on-hover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transition: transform var(--dur-base) var(--ease-soft);
 }
 .lift-on-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
   border-color: var(--border-strong);
+  background: var(--accent-tint);
+}
+.lift-on-hover:hover::before {
+  transform: scaleY(1);
+}
+
+/* A plain hairline rule, used instead of another bordered+shadowed card when a section just needs to be
+   set apart from the one above it — the instrument-panel alternative to stacking widgets. */
+.rule-above {
+  border-top: 1px solid var(--border);
 }
 
 @keyframes pulse-soft {

@@ -102,7 +102,7 @@ export default function ComparePage() {
                       key={m.id}
                       type="button"
                       onClick={() => toggleModel(m.id)}
-                      className="rounded-full border px-3 py-1.5 text-xs transition-[background-color,border-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-soft)] hover:-translate-y-px active:scale-95"
+                      className="rounded-[var(--radius-sm)] border px-3 py-1.5 text-xs transition-[background-color,border-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-press)] active:translate-y-px"
                       style={{
                         borderColor: active ? "var(--accent)" : "var(--border-strong)",
                         background: active ? "var(--accent-tint)" : "transparent",
