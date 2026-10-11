@@ -99,7 +99,8 @@ export default function PromptsPage() {
               className="block w-full text-left"
             >
               <Card
-                className={`p-4 transition-colors ${selected?.id === p.id ? "ring-2 ring-[var(--accent)]" : ""}`}
+                interactive
+                className={selected?.id === p.id ? "ring-2 ring-[var(--accent)] p-4" : "p-4"}
               >
                 <div className="flex items-center justify-between">
                   <p className="font-medium text-[var(--text)]">{p.name}</p>

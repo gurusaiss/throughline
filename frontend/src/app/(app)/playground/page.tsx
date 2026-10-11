@@ -97,7 +97,7 @@ export default function PlaygroundPage() {
                 role="radio"
                 aria-checked={mode === m.value}
                 onClick={() => setMode(m.value)}
-                className="rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
+                className="rounded-full border px-3 py-1.5 text-xs font-medium transition-[background-color,color,border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-soft)] hover:-translate-y-px active:translate-y-0 active:scale-95"
                 style={{
                   background: mode === m.value ? "var(--accent)" : "transparent",
                   color: mode === m.value ? "white" : "var(--text-muted)",
@@ -150,7 +150,7 @@ export default function PlaygroundPage() {
               <button
                 key={ex}
                 onClick={() => setInput(ex)}
-                className="rounded-[var(--radius-md)] border px-3 py-1.5 text-left text-xs text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--text)]"
+                className="rounded-[var(--radius-md)] border px-3 py-1.5 text-left text-xs text-[var(--text-muted)] transition-[border-color,color,transform] duration-[var(--dur-fast)] ease-[var(--ease-soft)] hover:-translate-y-px hover:border-[var(--accent)] hover:text-[var(--text)]"
                 style={{ borderColor: "var(--border)" }}
               >
                 {ex.length > 60 ? ex.slice(0, 57) + "…" : ex}

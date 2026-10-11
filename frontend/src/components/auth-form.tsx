@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { ApiError } from "@/lib/api";
+import { Logomark } from "./logomark";
 import { Button, ErrorBanner, Input, Label } from "./ui";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
@@ -36,9 +37,16 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4">
+    <form
+      onSubmit={onSubmit}
+      className="animate-fade-in w-full max-w-sm space-y-4 rounded-[var(--radius-lg)] border bg-[var(--surface)] p-7 shadow-[var(--shadow-md)]"
+      style={{ borderColor: "var(--border)" }}
+    >
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">
+        <span className="mb-3 inline-flex text-[var(--accent)]">
+          <Logomark size={24} />
+        </span>
+        <h1 className="text-xl tracking-tight">
           {mode === "login" ? "Sign in" : "Create your workspace"}
         </h1>
         <p className="mt-1 text-sm text-[var(--text-muted)]">
@@ -106,14 +114,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         {mode === "login" ? (
           <>
             No account?{" "}
-            <Link href="/signup" className="font-medium text-[var(--accent)]">
+            <Link href="/signup" className="link-underline font-medium text-[var(--accent)]">
               Sign up
             </Link>
           </>
         ) : (
           <>
             Already have one?{" "}
-            <Link href="/login" className="font-medium text-[var(--accent)]">
+            <Link href="/login" className="link-underline font-medium text-[var(--accent)]">
               Sign in
             </Link>
           </>

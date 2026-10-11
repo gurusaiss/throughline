@@ -8,13 +8,16 @@ import type { ReactNode } from "react";
 export function Card({
   children,
   className = "",
+  interactive = false,
 }: {
   children: ReactNode;
   className?: string;
+  /** Row/tile that is actually clickable — gets a lift-and-shadow hover rather than sitting static. */
+  interactive?: boolean;
 }) {
   return (
     <div
-      className={`rounded-[var(--radius-lg)] border bg-[var(--surface)] shadow-[var(--shadow-sm)] ${className}`}
+      className={`rounded-[var(--radius-lg)] border bg-[var(--surface)] shadow-[var(--shadow-sm)] ${interactive ? "lift-on-hover cursor-pointer" : ""} ${className}`}
       style={{ borderColor: "var(--border)" }}
     >
       {children}
@@ -33,15 +36,17 @@ export function Button({
   size?: "sm" | "md";
 }) {
   const base =
-    "inline-flex items-center justify-center gap-1.5 font-medium rounded-[var(--radius-md)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center gap-1.5 font-medium rounded-[var(--radius-md)] " +
+    "transition-[background-color,border-color,box-shadow,transform] duration-[var(--dur-fast)] ease-[var(--ease-soft)] " +
+    "active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
   const sizes = size === "sm" ? "text-xs px-2.5 py-1.5" : "text-sm px-3.5 py-2";
   const variants: Record<string, string> = {
     primary:
-      "bg-[var(--accent)] text-white hover:bg-[var(--accent-strong)] active:bg-[var(--accent-strong)]",
+      "bg-[var(--accent)] text-white shadow-[var(--shadow-sm)] hover:bg-[var(--accent-strong)] hover:shadow-[var(--shadow-md)] hover:-translate-y-px active:translate-y-0",
     secondary:
-      "bg-[var(--surface)] text-[var(--text)] border hover:bg-[var(--accent-tint)]",
+      "bg-[var(--surface)] text-[var(--text)] border hover:bg-[var(--accent-tint)] hover:border-[var(--accent)]",
     ghost: "text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--accent-tint)]",
-    danger: "bg-[var(--danger)] text-white hover:opacity-90",
+    danger: "bg-[var(--danger)] text-white hover:brightness-110 hover:shadow-[var(--shadow-md)] hover:-translate-y-px active:translate-y-0",
   };
   return (
     <button
@@ -84,13 +89,18 @@ export function ConfidenceBadge({ level }: { level: string }) {
   return <Badge tone={tone}>{level} confidence</Badge>;
 }
 
+const FIELD_BASE =
+  "w-full rounded-[var(--radius-md)] border bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--text-faint)] " +
+  "transition-[border-color,box-shadow] duration-[var(--dur-fast)] ease-[var(--ease-soft)] " +
+  "hover:border-[var(--text-faint)] focus:border-[var(--accent)] focus:shadow-[0_0_0_3px_rgba(var(--accent-rgb),0.14)] focus:outline-none";
+
 export function TextArea({
   className = "",
   ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
-      className={`w-full resize-none rounded-[var(--radius-md)] border bg-[var(--surface)] px-3.5 py-3 text-sm text-[var(--text)] placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] ${className}`}
+      className={`${FIELD_BASE} resize-none px-3.5 py-3 text-sm ${className}`}
       style={{ borderColor: "var(--border-strong)" }}
       {...props}
     />
@@ -103,7 +113,7 @@ export function Input({
 }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`w-full rounded-[var(--radius-md)] border bg-[var(--surface)] px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-faint)] focus:border-[var(--accent)] ${className}`}
+      className={`${FIELD_BASE} px-3 py-2 text-sm ${className}`}
       style={{ borderColor: "var(--border-strong)" }}
       {...props}
     />
@@ -119,18 +129,18 @@ export function Label({ children }: { children: ReactNode }) {
 }
 
 export function Spinner({ className = "" }: { className?: string }) {
+  // Three breathing dots rather than the ubiquitous spinning-ring glyph every loading state in every
+  // AI product uses — same footprint and "still working" meaning, distinct silhouette.
   return (
-    <svg
-      className={`animate-spin ${className}`}
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
-      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
+    <span className={`inline-flex items-center gap-[3px] ${className}`} role="status" aria-label="Loading">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className="dot-pulse h-[5px] w-[5px] rounded-full bg-current"
+          style={{ animationDelay: `${i * 0.16}s` }}
+        />
+      ))}
+    </span>
   );
 }
 
@@ -144,8 +154,21 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-dashed py-16 text-center" style={{ borderColor: "var(--border-strong)" }}>
-      <p className="text-sm font-medium text-[var(--text)]">{title}</p>
+    <div
+      className="animate-fade-in flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border border-dashed py-16 text-center"
+      style={{ borderColor: "var(--border-strong)" }}
+    >
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" className="mb-1 text-[var(--text-faint)]" aria-hidden="true">
+        <path
+          d="M14 4v6m0 8v6M4 14h6m8 0h6"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          opacity="0.5"
+        />
+        <circle cx="14" cy="14" r="4.5" stroke="currentColor" strokeWidth="1.6" />
+      </svg>
+      <p className="font-[family-name:var(--font-display)] text-base font-medium text-[var(--text)]">{title}</p>
       {description && <p className="max-w-sm text-sm text-[var(--text-muted)]">{description}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
@@ -156,7 +179,7 @@ export function ErrorBanner({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="rounded-[var(--radius-md)] border px-3.5 py-2.5 text-sm"
+      className="animate-fade-in rounded-[var(--radius-md)] border px-3.5 py-2.5 text-sm"
       style={{ borderColor: "var(--danger)", background: "var(--danger-tint)", color: "var(--danger)" }}
     >
       {message}
@@ -167,7 +190,7 @@ export function ErrorBanner({ message }: { message: string }) {
 export function WarningBanner({ message }: { message: string }) {
   return (
     <div
-      className="rounded-[var(--radius-md)] border px-3.5 py-2.5 text-sm"
+      className="animate-fade-in rounded-[var(--radius-md)] border px-3.5 py-2.5 text-sm"
       style={{ borderColor: "var(--warn)", background: "var(--warn-tint)", color: "var(--warn)" }}
     >
       {message}
